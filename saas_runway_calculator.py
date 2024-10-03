@@ -6,73 +6,41 @@ import matplotlib.pyplot as plt
 st.title("SaaS Runway Calculator V2")
 
 # Sidebar Inputs for Financial Data
-st.sidebar.header("Enter your financial data")
+st.sidebar.header("Financial Data Input")
+
+# Main Financial Data Inputs
 monthly_revenue = st.sidebar.number_input("Monthly Revenue ($)", value=20000)
 monthly_expenses = st.sidebar.number_input("Monthly Expenses ($)", value=15000)
 current_cash = st.sidebar.number_input("Current Cash on Hand ($)", value=100000)
-revenue_growth_rate = st.sidebar.slider("Revenue Growth Rate (%)", 0.0, 20.0, 5.0) / 100
-expense_growth_rate = st.sidebar.slider("Expense Growth Rate (%)", 0.0, 20.0, 3.0) / 100
-months = st.sidebar.slider("Time Frame (Months)", 1, 36, 12)
 funding_injection = st.sidebar.number_input("Funding Injection (Optional) ($)", value=0)
 
-# New Features: Pessimistic, Realistic, Optimistic Growth Scenarios
-st.header("Revenue Growth Scenarios")
-pessimistic_growth = st.number_input("Pessimistic Growth Rate (%)", value=5)
-realistic_growth = st.number_input("Realistic Growth Rate (%)", value=15)
-optimistic_growth = st.number_input("Optimistic Growth Rate (%)", value=25)
+# Growth Rate Inputs
+revenue_growth_rate = st.sidebar.slider("Revenue Growth Rate (%)", 0.0, 20.0, 5.0) / 100
+expense_growth_rate = st.sidebar.slider("Expense Growth Rate (%)", 0.0, 20.0, 3.0) / 100
+
+# Time Frame
+months = st.sidebar.slider("Time Frame (Months)", 1, 36, 12)
+
+# Revenue Growth Scenarios
+st.sidebar.header("Revenue Growth Scenarios")
+pessimistic_growth = st.sidebar.number_input("Pessimistic Growth Rate (%)", value=5)
+realistic_growth = st.sidebar.number_input("Realistic Growth Rate (%)", value=15)
+optimistic_growth = st.sidebar.number_input("Optimistic Growth Rate (%)", value=25)
 
 # Churn Rate Input
-churn_rate = st.number_input("Churn Rate (%)", value=5)
+churn_rate = st.sidebar.number_input("Churn Rate (%)", value=5)
 
 # Burn Rate Analysis - Expense Breakdown
-st.header("Burn Rate Analysis")
-salaries = st.number_input("Salaries ($)", value=50000)
-marketing = st.number_input("Marketing ($)", value=10000)
-infrastructure = st.number_input("Infrastructure ($)", value=5000)
-misc = st.number_input("Miscellaneous ($)", value=2000)
-
-total_burn = salaries + marketing + infrastructure + misc
-st.write(f"Total Monthly Burn: ${total_burn}")
+st.sidebar.header("Burn Rate Analysis")
+salaries = st.sidebar.number_input("Salaries ($)", value=50000)
+marketing = st.sidebar.number_input("Marketing ($)", value=10000)
+infrastructure = st.sidebar.number_input("Infrastructure ($)", value=5000)
+misc = st.sidebar.number_input("Miscellaneous ($)", value=2000)
 
 # CAC and LTV Integration
-st.header("Customer Acquisition Cost (CAC) and Lifetime Value (LTV)")
-cac = st.number_input("CAC ($)", value=200)
-ltv = st.number_input("LTV ($)", value=1000)
-
-# Function to calculate runway based on revenue, burn rate, and growth/churn rates
-def calculate_runway(revenue, burn_rate, growth_rate, churn_rate):
-    months = 0
-    while revenue > burn_rate:
-        revenue = revenue * (1 + growth_rate / 100) * (1 - churn_rate / 100)
-        months += 1
-    return months
-
-# Runway calculations for pessimistic, realistic, and optimistic scenarios
-runway_pessimistic = calculate_runway(100000, total_burn, pessimistic_growth, churn_rate)
-runway_realistic = calculate_runway(100000, total_burn, realistic_growth, churn_rate)
-runway_optimistic = calculate_runway(100000, total_burn, optimistic_growth, churn_rate)
-
-# Display results
-st.write(f"Runway (Pessimistic): {runway_pessimistic} months")
-st.write(f"Runway (Realistic): {runway_realistic} months")
-st.write(f"Runway (Optimistic): {runway_optimistic} months")
-
-# Cost Cutting Suggestions based on expenses
-st.header("Cost Cutting Suggestions")
-
-if marketing > 0:
-    st.write("Consider reducing marketing spend to extend your runway.")
-if infrastructure > 0:
-    st.write("Reducing infrastructure costs or using cheaper alternatives can help.")
-if misc > 0:
-    st.write("Look into minimizing miscellaneous expenses.")
-
-# Analysis and suggestions for CAC and LTV
-profitability_ratio = ltv / cac
-if profitability_ratio > 3:
-    st.write("Good CAC to LTV ratio! You're in a healthy position.")
-else:
-    st.write("Consider improving your CAC or LTV to increase runway. Suggestions: Optimize customer retention, lower CAC via organic channels.")
+st.sidebar.header("Customer Acquisition Cost (CAC) and Lifetime Value (LTV)")
+cac = st.sidebar.number_input("CAC ($)", value=200)
+ltv = st.sidebar.number_input("LTV ($)", value=1000)
 
 # 2. Calculations for Revenue, Expenses, and Cash
 revenues = [monthly_revenue]
@@ -95,6 +63,24 @@ for month in range(1, months):
     # Inject funding at month 6 (optional)
     if month == 6:
         cash_remaining[-1] += funding_injection
+
+# Runway calculations for pessimistic, realistic, and optimistic scenarios
+def calculate_runway(revenue, burn_rate, growth_rate, churn_rate):
+    months = 0
+    while revenue > burn_rate:
+        revenue = revenue * (1 + growth_rate / 100) * (1 - churn_rate / 100)
+        months += 1
+    return months
+
+runway_pessimistic = calculate_runway(current_cash, salaries + marketing + infrastructure + misc, pessimistic_growth, churn_rate)
+runway_realistic = calculate_runway(current_cash, salaries + marketing + infrastructure + misc, realistic_growth, churn_rate)
+runway_optimistic = calculate_runway(current_cash, salaries + marketing + infrastructure + misc, optimistic_growth, churn_rate)
+
+# Display results
+st.subheader("Runway Estimates")
+st.write(f"Runway (Pessimistic): {runway_pessimistic} months")
+st.write(f"Runway (Realistic): {runway_realistic} months")
+st.write(f"Runway (Optimistic): {runway_optimistic} months")
 
 # 3. Plot Graphs
 fig, ax = plt.subplots()
@@ -119,3 +105,19 @@ if runway < months:
     st.warning("Consider reducing expenses or increasing revenue to extend your runway.")
 else:
     st.success("Your runway is secure for the given time frame.")
+
+# Cost Cutting Suggestions based on expenses
+st.header("Cost Cutting Suggestions")
+if marketing > 0:
+    st.write("Consider reducing marketing spend to extend your runway.")
+if infrastructure > 0:
+    st.write("Reducing infrastructure costs or using cheaper alternatives can help.")
+if misc > 0:
+    st.write("Look into minimizing miscellaneous expenses.")
+
+# Analysis and suggestions for CAC and LTV
+profitability_ratio = ltv / cac
+if profitability_ratio > 3:
+    st.write("Good CAC to LTV ratio! You're in a healthy position.")
+else:
+    st.write("Consider improving your CAC or LTV to increase runway. Suggestions: Optimize customer retention, lower CAC via organic channels.")
