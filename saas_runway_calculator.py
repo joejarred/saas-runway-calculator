@@ -8,7 +8,7 @@ st.title("SaaS Runway Calculator V2")
 # Sidebar Inputs for Financial Data
 st.sidebar.header("Financial Data Input")
 
-# Main Financial Data Inputs
+# Financial Data Inputs
 monthly_revenue = st.sidebar.number_input("Monthly Revenue ($)", value=20000)
 monthly_expenses = st.sidebar.number_input("Monthly Expenses ($)", value=15000)
 current_cash = st.sidebar.number_input("Current Cash on Hand ($)", value=100000)
@@ -42,39 +42,44 @@ st.sidebar.header("Customer Acquisition Cost (CAC) and Lifetime Value (LTV)")
 cac = st.sidebar.number_input("CAC ($)", value=200)
 ltv = st.sidebar.number_input("LTV ($)", value=1000)
 
-# 2. Calculations for Revenue, Expenses, and Cash
-revenues = [monthly_revenue]
-expenses = [monthly_expenses]
-cash_remaining = [current_cash]
+# Calculations for Revenue, Expenses, and Cash
+def calculate_cash_flow(months, monthly_revenue, monthly_expenses, funding_injection, revenue_growth_rate, expense_growth_rate):
+    revenues = [monthly_revenue]
+    expenses = [monthly_expenses]
+    cash_remaining = [current_cash]
 
-for month in range(1, months):
-    # Increase revenue and expenses based on growth rates
-    new_revenue = revenues[-1] * (1 + revenue_growth_rate)
-    new_expenses = expenses[-1] * (1 + expense_growth_rate)
-    
-    # Calculate cash left after the month
-    cash_left = cash_remaining[-1] + new_revenue - new_expenses
-    
-    # Add revenue, expenses, and cash remaining to lists
-    revenues.append(new_revenue)
-    expenses.append(new_expenses)
-    cash_remaining.append(cash_left)
+    for month in range(1, months):
+        new_revenue = revenues[-1] * (1 + revenue_growth_rate)
+        new_expenses = expenses[-1] * (1 + expense_growth_rate)
+        cash_left = cash_remaining[-1] + new_revenue - new_expenses
 
-    # Inject funding at month 6 (optional)
-    if month == 6:
-        cash_remaining[-1] += funding_injection
+        revenues.append(new_revenue)
+        expenses.append(new_expenses)
+        cash_remaining.append(cash_left)
+
+        # Inject funding at month 6 (optional)
+        if month == 6:
+            cash_remaining[-1] += funding_injection
+
+    return revenues, expenses, cash_remaining
+
+revenues, expenses, cash_remaining = calculate_cash_flow(months, monthly_revenue, monthly_expenses, funding_injection, revenue_growth_rate, expense_growth_rate)
 
 # Runway calculations for pessimistic, realistic, and optimistic scenarios
-def calculate_runway(revenue, burn_rate, growth_rate, churn_rate):
-    months = 0
-    while revenue > burn_rate:
-        revenue = revenue * (1 + growth_rate / 100) * (1 - churn_rate / 100)
-        months += 1
-    return months
+def calculate_runway(current_cash, monthly_burn_rate, growth_rate, churn_rate):
+    runway_months = 0
+    cash = current_cash
+    while cash > 0:
+        cash += (cash * growth_rate / 100) - monthly_burn_rate
+        runway_months += 1
+        if cash < 0:
+            break
+    return runway_months
 
-runway_pessimistic = calculate_runway(current_cash, salaries + marketing + infrastructure + misc, pessimistic_growth, churn_rate)
-runway_realistic = calculate_runway(current_cash, salaries + marketing + infrastructure + misc, realistic_growth, churn_rate)
-runway_optimistic = calculate_runway(current_cash, salaries + marketing + infrastructure + misc, optimistic_growth, churn_rate)
+monthly_burn_rate = salaries + marketing + infrastructure + misc
+runway_pessimistic = calculate_runway(current_cash, monthly_burn_rate, pessimistic_growth, churn_rate)
+runway_realistic = calculate_runway(current_cash, monthly_burn_rate, realistic_growth, churn_rate)
+runway_optimistic = calculate_runway(current_cash, monthly_burn_rate, optimistic_growth, churn_rate)
 
 # Display results
 st.subheader("Runway Estimates")
@@ -82,7 +87,7 @@ st.write(f"Runway (Pessimistic): {runway_pessimistic} months")
 st.write(f"Runway (Realistic): {runway_realistic} months")
 st.write(f"Runway (Optimistic): {runway_optimistic} months")
 
-# 3. Plot Graphs
+# Plotting the graphs
 fig, ax = plt.subplots()
 months_list = np.arange(0, months)
 ax.plot(months_list, cash_remaining, label="Cash Remaining", color='green')
@@ -94,13 +99,12 @@ ax.set_ylabel('Dollars')
 ax.legend()
 ax.grid(True)
 
-# Display the graph
+# Display the graph using Streamlit's pyplot
 st.pyplot(fig)
 
-# 4. Actionable Advice
+# Actionable Advice
 runway = next((i for i, cash in enumerate(cash_remaining) if cash < 0), months)
 st.write(f"At the current burn rate, you have **{runway} months** of runway left.")
-
 if runway < months:
     st.warning("Consider reducing expenses or increasing revenue to extend your runway.")
 else:
